@@ -1708,6 +1708,10 @@ function s:UncommentLineNormal(line)
     elseif lineCommentStatus == 2 && g:NERDRemoveAltComs
         let line = s:RemoveDelimiters(s:Left({'alt': 1}), s:Right({'alt': 1}), line)
 
+    "the line is an actual comment and thus shouldn't be uncommented
+    elseif lineCommentStatus == 3
+        return line
+
     "it is not properly commented with any delimiters so we check if it has
     "any random left or right delimiters on it and remove the outermost ones
     else
@@ -2413,6 +2417,7 @@ endfunction
 "   0 if the line is not commented with either set of delimiters
 "   1 if the line is commented with the left/right delimiter set
 "   2 if the line is commented with the leftAlt/rightAlt delim set
+"   3 if the line is an actual comment and thus shouldn't be uncommented
 function s:IsCommentedOutermost(left, right, leftAlt, rightAlt, line)
     "get the first positions of the left delimiters and the last positions of the
     "right delimiters
@@ -2425,6 +2430,12 @@ function s:IsCommentedOutermost(left, right, leftAlt, rightAlt, line)
     if (indxLeft <= indxLeftAlt || indxLeftAlt == -1) && indxLeft != -1
         "check if the line has a right delimiter after any rightAlt delimiter
         if (indxRight > indxRightAlt && indxRight > indxLeft) || !s:Multipart()
+            "check if the line has an actual comment and thus shouldn't be uncommented
+            "heuristic for detecting an actual comment: comment symbols + ' ' + string
+            "example: // some comment here ... as opposed to //not a real comment so uncomment me
+            if a:line[indxLeft + strlen(a:left)] == ' ' && a:line[indxLeft + strlen(a:left) + 1] != ' '
+              return 3
+            endif
             return 1
         endif
 
